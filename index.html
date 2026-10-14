@@ -10,8 +10,8 @@
   --bg: #f4f4f2; --surface: #fcfcfb; --border: #e3e2de;
   --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #77766f;
   --grid: #ecebe7; --axis: #b9b8b2;
-  --s1: #2a78d6; --s6: #eb6834; --sg: #c98500;
-  --good: #1a7f37; --warn: #b35900; --accent: #0b3c5d;
+  --s1: #2a78d6; --s6: #eb6834; --sg: #c98500; --sa: #6250d6;
+  --good: #1a7f37; --warn: #b35900; --bad: #c62828;
 }
 @media (prefers-color-scheme: dark) {
   :root:where(:not([data-theme="light"])) {
@@ -19,8 +19,8 @@
     --bg: #111110; --surface: #1a1a19; --border: #2e2e2c;
     --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #9a998f;
     --grid: #262624; --axis: #4a4a46;
-    --s1: #3987e5; --s6: #d95926; --sg: #c98500;
-    --good: #3fb950; --warn: #e3a03a; --accent: #7fb3d5;
+    --s1: #3987e5; --s6: #d95926; --sg: #c98500; --sa: #9085e9;
+    --good: #3fb950; --warn: #e3a03a; --bad: #f47067;
   }
 }
 :root[data-theme="dark"] {
@@ -28,50 +28,62 @@
   --bg: #111110; --surface: #1a1a19; --border: #2e2e2c;
   --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #9a998f;
   --grid: #262624; --axis: #4a4a46;
-  --s1: #3987e5; --s6: #d95926; --sg: #c98500;
-  --good: #3fb950; --warn: #e3a03a; --accent: #7fb3d5;
+  --s1: #3987e5; --s6: #d95926; --sg: #c98500; --sa: #9085e9;
+  --good: #3fb950; --warn: #e3a03a; --bad: #f47067;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text-primary);
   font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-main { max-width: 1040px; margin: 0 auto; padding: 20px 16px 48px; }
-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+main { max-width: 1080px; margin: 0 auto; padding: 20px 16px 48px; }
+header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 h1 { font-size: 20px; margin: 0; }
 .sub { color: var(--text-secondary); font-size: 13px; margin-top: 2px; }
 .estado { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px;
   border: 1px solid var(--border); background: var(--surface); font-size: 13px; font-weight: 600; }
-.estado .punto { width: 9px; height: 9px; border-radius: 50%; }
-.ok .punto { background: var(--good); } .ok { color: var(--good); }
-.mal .punto { background: var(--warn); } .mal { color: var(--warn); }
-.barra { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 16px; }
-button, select, a.btn { font: inherit; font-size: 14px; color: var(--text-primary); background: var(--surface);
+.estado .punto { width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+.ok { color: var(--good); } .mal { color: var(--warn); }
+nav.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 14px; overflow-x: auto; }
+nav.tabs button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 8px 12px; color: var(--text-secondary); white-space: nowrap; }
+nav.tabs button.on { color: var(--text-primary); border-bottom-color: var(--text-primary); font-weight: 600; }
+.vista { display: none; } .vista.on { display: block; }
+.barra { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 14px; }
+button, select, input, a.btn { font: inherit; font-size: 14px; color: var(--text-primary); background: var(--surface);
   border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; cursor: pointer; text-decoration: none; }
 button:hover, a.btn:hover { border-color: var(--axis); }
-.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
 .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
 .tile .k { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
 .tile .v { font-size: 24px; font-weight: 650; margin-top: 2px; font-variant-numeric: tabular-nums; }
 .tile .u { font-size: 13px; color: var(--text-secondary); font-weight: 400; margin-left: 3px; }
-.sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 14px 8px; margin-bottom: 16px; }
-.card h2 { font-size: 15px; margin: 0 0 2px; }
-.card .sub { margin-bottom: 8px; }
-.leyenda { display: flex; gap: 14px; font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+.sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 14px 8px; margin-bottom: 14px; }
+.card-cab { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.card h2 { font-size: 15px; margin: 0; }
+.chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); }
+.leyenda { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--text-secondary); margin: 8px 0 4px; }
 .leyenda span { display: inline-flex; align-items: center; gap: 6px; }
+.hueco-sw { width: 14px; height: 10px; border-radius: 2px; background: var(--warn); opacity: .25; display: inline-block; }
 .graf { position: relative; }
 .graf svg { width: 100%; height: auto; display: block; }
 .tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border);
   border-radius: 8px; padding: 6px 10px; font-size: 12.5px; box-shadow: 0 2px 8px rgba(0,0,0,.12);
-  white-space: nowrap; display: none; font-variant-numeric: tabular-nums; }
-.vacio { color: var(--text-muted); padding: 40px 0; text-align: center; }
+  white-space: nowrap; display: none; font-variant-numeric: tabular-nums; z-index: 2; }
+.vacio { color: var(--text-muted); padding: 28px 0; text-align: center; font-size: 14px; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
 th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
-th:first-child, td:first-child { text-align: left; }
-th { color: var(--text-secondary); font-weight: 600; }
-.tabla { overflow-x: auto; }
+th:first-child, td:first-child, .izq { text-align: left; }
+th { color: var(--text-secondary); font-weight: 600; position: sticky; top: 0; background: var(--surface); }
+td.nan { color: var(--bad); }
+.tabla { overflow: auto; max-height: 520px; }
+.barra-pct { height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; min-width: 80px; }
+.barra-pct i { display: block; height: 100%; }
 .dias { display: flex; flex-wrap: wrap; gap: 6px; }
 .dias a { font-size: 13px; padding: 4px 10px; }
-footer { color: var(--text-muted); font-size: 12px; margin-top: 8px; }
+.form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; align-items: end; }
+.form label { font-size: 12px; color: var(--text-secondary); display: grid; gap: 4px; }
+.checks { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; margin: 10px 0; }
+.checks label { display: inline-flex; gap: 6px; align-items: center; }
+.nota { color: var(--text-muted); font-size: 12px; margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -79,7 +91,7 @@ footer { color: var(--text-muted); font-size: 12px; margin-top: 8px; }
   <header>
     <div>
       <h1>Rendimiento de los arreglos FV 1 y 6</h1>
-      <div class="sub">EL-5656 · TEC San Carlos · Grupo 4 · datos cada minuto, publicados cada 15 min</div>
+      <div class="sub">EL-5656 · TEC San Carlos · Grupo 4 · una lectura por minuto, publicada cada 15 min</div>
     </div>
     <div id="estado" class="estado"><span class="punto"></span><span id="estado-txt">Cargando…</span></div>
   </header>
@@ -88,35 +100,60 @@ footer { color: var(--text-muted); font-size: 12px; margin-top: 8px; }
     <button id="ant" aria-label="Día anterior">‹</button>
     <select id="dia" aria-label="Día"></select>
     <button id="sig" aria-label="Día siguiente">›</button>
-    <a id="bajar" class="btn" href="#" download>Descargar CSV del día</a>
+    <a id="bajar" class="btn" href="#" download>⤓ CSV del día (todo)</a>
     <button id="tema" aria-label="Cambiar tema">◐</button>
   </div>
 
-  <section class="tiles" id="tiles"></section>
+  <nav class="tabs">
+    <button data-v="v-graf" class="on">Gráficas</button>
+    <button data-v="v-perdidos">Datos perdidos</button>
+    <button data-v="v-tabla">Tabla</button>
+    <button data-v="v-desc">Descargas</button>
+  </nav>
 
-  <section class="card">
-    <h2>Potencia DC</h2>
-    <div class="sub" id="sub-p">W, medida en cada inversor</div>
-    <div class="leyenda"><span><i class="sw" style="background:var(--s1)"></i>Arreglo 1</span><span><i class="sw" style="background:var(--s6)"></i>Arreglo 6</span></div>
-    <div class="graf" id="g-p"></div>
+  <section id="v-graf" class="vista on">
+    <div class="tiles" id="tiles"></div>
+    <div id="cards"></div>
   </section>
 
-  <section class="card" id="card-g">
-    <h2>Irradiancia</h2>
-    <div class="sub">W/m², Spektron 210 en el plano de los paneles</div>
-    <div class="graf" id="g-g"></div>
+  <section id="v-perdidos" class="vista">
+    <div class="card">
+      <h2>Completitud del día por componente</h2>
+      <div class="sub" id="esperadas"></div>
+      <div class="tabla" style="max-height:none"><table id="t-comp"></table></div>
+    </div>
+    <div class="card">
+      <h2>Huecos encontrados</h2>
+      <div class="sub">Periodos de 2 min o más sin lectura válida</div>
+      <div class="tabla"><table id="t-huecos"></table></div>
+    </div>
   </section>
 
-  <section class="card">
-    <h2>Últimas lecturas</h2>
-    <div class="tabla"><table id="tabla"></table></div>
+  <section id="v-tabla" class="vista">
+    <div class="card">
+      <div class="card-cab"><h2>Todas las lecturas del día</h2><span class="sub" id="n-filas"></span></div>
+      <div class="nota">Las celdas en rojo son lecturas perdidas (NaN). Lo más reciente arriba.</div>
+      <div class="tabla"><table id="t-todo"></table></div>
+    </div>
   </section>
 
-  <section class="card">
-    <h2>Todos los días</h2>
-    <div class="sub">Clic para descargar el CSV</div>
-    <div class="dias" id="dias"></div>
-    <footer>Columnas: fecha, G_Wm2, Tc1_C, Tc6_C, Tamb_C, Pdc1_W, Pdc6_W · NaN = lectura no disponible</footer>
+  <section id="v-desc" class="vista">
+    <div class="card">
+      <h2>Descargar por componente y rango de fechas</h2>
+      <div class="form" style="margin-top:10px">
+        <label>Desde<select id="desde"></select></label>
+        <label>Hasta<select id="hasta"></select></label>
+        <button id="b-rango">⤓ Descargar CSV</button>
+      </div>
+      <div class="checks" id="checks"></div>
+      <div class="nota" id="n-rango"></div>
+    </div>
+    <div class="card">
+      <h2>Archivos diarios completos</h2>
+      <div class="sub" style="margin-bottom:8px">Un CSV por día con todas las columnas</div>
+      <div class="dias" id="dias"></div>
+      <div class="nota">Columnas: fecha, G_Wm2, Tc1_C, Tc6_C, Tamb_C, Pdc1_W, Pdc6_W · NaN = lectura no disponible</div>
+    </div>
   </section>
 </main>
 
@@ -125,25 +162,74 @@ const $ = id => document.getElementById(id);
 const nocache = () => '?t=' + Date.now();
 let DIAS = [], DIA = null, FILAS = [];
 
+// Componentes del sistema: cada uno con su gráfica, su chip de completitud y su descarga
+const COMP = [
+  { id: 'pot', titulo: 'Potencia DC', fuente: 'Inversores SMA Sunny Boy 3.8 (Modbus TCP / web)', unidad: 'W', dec: 0,
+    series: [{ col: 'Pdc1_W', nombre: 'Arreglo 1 (inversor .91)', corto: '1', color: 'var(--s1)' },
+             { col: 'Pdc6_W', nombre: 'Arreglo 6 (inversor .96)', corto: '6', color: 'var(--s6)' }] },
+  { id: 'irr', titulo: 'Irradiancia', fuente: 'Spektron 210 + ADS1115, en el plano de los paneles', unidad: 'W/m²', dec: 0,
+    series: [{ col: 'G_Wm2', nombre: 'Irradiancia', corto: 'G', color: 'var(--sg)' }] },
+  { id: 'tc', titulo: 'Temperatura de celda', fuente: 'DS18B20 bajo los paneles (1-Wire)', unidad: '°C', dec: 1,
+    series: [{ col: 'Tc1_C', nombre: 'Celda arreglo 1', corto: '1', color: 'var(--s1)' },
+             { col: 'Tc6_C', nombre: 'Celda arreglo 6', corto: '6', color: 'var(--s6)' }] },
+  { id: 'amb', titulo: 'Temperatura ambiente', fuente: 'DHT22 a la sombra', unidad: '°C', dec: 1,
+    series: [{ col: 'Tamb_C', nombre: 'Ambiente', corto: 'A', color: 'var(--sa)' }] },
+];
+const COLS = COMP.flatMap(c => c.series);
+const NOMBRE = Object.fromEntries(COLS.map(s => [s.col, s.nombre]));
+
 try { const t = localStorage.getItem('tema'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
 $('tema').onclick = () => {
-  const oscuro = getComputedStyle(document.documentElement).colorScheme.includes('dark');
-  const t = oscuro ? 'light' : 'dark';
-  document.documentElement.dataset.theme = t;
-  try { localStorage.setItem('tema', t); } catch (e) {}
+  const t = getComputedStyle(document.documentElement).colorScheme.includes('dark') ? 'light' : 'dark';
+  document.documentElement.dataset.theme = t; try { localStorage.setItem('tema', t); } catch (e) {}
   dibujar();
 };
+document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav.tabs button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.vista').forEach(v => v.classList.toggle('on', v.id === b.dataset.v));
+  if (b.dataset.v === 'v-graf') dibujar();
+});
 
 function parseCSV(txt) {
   const l = txt.trim().split(/\r?\n/); const cab = l.shift().split(',');
-  return l.map(r => { const v = r.split(','); const o = {};
+  return l.filter(r => r.trim()).map(r => { const v = r.split(','); const o = {};
     cab.forEach((c, i) => o[c] = c === 'fecha' ? v[i] : (v[i] === undefined || v[i] === 'NaN' || v[i] === '' ? null : +v[i]));
     o.t = new Date(o.fecha.replace(' ', 'T')); return o; });
 }
 const fmt = (x, d = 0) => x == null || isNaN(x) ? '—' : x.toLocaleString('es-CR', { minimumFractionDigits: d, maximumFractionDigits: d });
 const hhmm = t => t.toTimeString().slice(0, 5);
+const dur = min => min >= 60 ? `${Math.floor(min / 60)} h ${Math.round(min % 60)} min` : `${Math.round(min)} min`;
 
-function energia(col) {           // Wh por trapecios, ignora huecos > 5 min
+// ---------- datos perdidos ----------
+function minutosEsperados() {
+  if (FILAS.length < 2) return FILAS.length;
+  return Math.round((FILAS[FILAS.length - 1].t - FILAS[0].t) / 60000) + 1;
+}
+function huecos(cols) {          // periodos >= 2 min donde NINGUNA de las columnas tiene valor
+  const H = []; let ultimoOk = null, inicio = null;
+  const valido = f => cols.some(c => f[c] != null);
+  for (const f of FILAS) {
+    if (valido(f)) {
+      if (inicio == null && ultimoOk && f.t - ultimoOk > 90000) H.push({ a: new Date(+ultimoOk + 60000), b: f.t });
+      if (inicio != null) { H.push({ a: inicio, b: f.t }); inicio = null; }
+      ultimoOk = f.t;
+    } else if (inicio == null) inicio = f.t;
+  }
+  if (inicio != null) H.push({ a: inicio, b: new Date(+FILAS[FILAS.length - 1].t + 60000), abierto: true });
+  if (!FILAS.some(valido) && FILAS.length) return [{ a: FILAS[0].t, b: new Date(+FILAS[FILAS.length - 1].t + 60000), todo: true }];
+  return H.filter(h => (h.b - h.a) >= 120000 || h.todo);
+}
+const minuto = f => f.fecha.slice(0, 16);   // la completitud se cuenta por minuto (1 lectura/min)
+function completitud(col) {
+  const esp = minutosEsperados();
+  const ok = new Set(FILAS.filter(f => f[col] != null).map(minuto)).size;
+  const conFila = new Set(FILAS.map(minuto)).size;
+  return { ok, esp, pct: esp ? Math.min(100, 100 * ok / esp) : 0, nan: conFila - ok, faltan: Math.max(0, esp - conFila) };
+}
+const colorPct = p => p >= 95 ? 'var(--good)' : p >= 50 ? 'var(--warn)' : 'var(--bad)';
+
+// ---------- vistas ----------
+function energia(col) {
   let e = 0;
   for (let i = 1; i < FILAS.length; i++) {
     const a = FILAS[i - 1], b = FILAS[i], dt = (b.t - a.t) / 3.6e6;
@@ -162,99 +248,149 @@ function tiles() {
     ['Energía arreglo 6', fmt(e6 / 1000, 2), 'kWh', 'var(--s6)'],
     ['Razón 1 / 6', e6 > 0 ? fmt(e1 / e6, 3) : '—', '', null],
     ['Irradiancia', fmt(ultimo('G_Wm2')), 'W/m²', null],
-    ['T celda 1', fmt(ultimo('Tc1_C'), 1), '°C', null],
-    ['T celda 6', fmt(ultimo('Tc6_C'), 1), '°C', null],
-    ['T ambiente', fmt(ultimo('Tamb_C'), 1), '°C', null],
   ];
   $('tiles').innerHTML = T.map(([k, v, u, c]) =>
     `<div class="tile"><div class="k">${c ? `<i class="sw" style="background:${c}"></i>` : ''}${k}</div><div class="v">${v}<span class="u">${u}</span></div></div>`).join('');
 }
 
 function estado() {
-  const el = $('estado'), hoy = new Date().toISOString().slice(0, 10);
-  const u = FILAS.length ? FILAS[FILAS.length - 1].t : null;
+  const el = $('estado'); const u = FILAS.length ? FILAS[FILAS.length - 1].t : null;
   if (!u) { el.className = 'estado mal'; $('estado-txt').textContent = 'Sin datos'; return; }
-  const min = (Date.now() - u) / 60000;
-  const ok = min < 30;
+  const min = (Date.now() - u) / 60000, hoy = DIA === DIAS[DIAS.length - 1], ok = hoy && min < 30;
   el.className = 'estado ' + (ok ? 'ok' : 'mal');
-  $('estado-txt').textContent = (ok ? 'Midiendo · ' : 'Sin datos nuevos · ') + 'última lectura ' +
-    (DIA === DIAS[DIAS.length - 1] ? (min < 1 ? 'hace <1 min' : `hace ${Math.round(min)} min`) : u.toLocaleString('es-CR'));
+  $('estado-txt').textContent = hoy ? (ok ? 'Midiendo · ' : 'Sin datos nuevos · ') + `última lectura hace ${min < 1 ? '<1' : Math.round(min)} min`
+                                    : `Día archivado · última lectura ${hhmm(u)}`;
 }
 
-function grafico(cont, series, unidad) {
-  const el = $(cont); el.innerHTML = '';
+function cards() {
+  $('cards').innerHTML = COMP.map(c => {
+    const pcts = c.series.map(s => completitud(s.col).pct), p = Math.min(...pcts);
+    return `<section class="card">
+      <div class="card-cab"><div><h2>${c.titulo}</h2><div class="sub">${c.unidad} · ${c.fuente}</div></div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span class="chip" style="color:${colorPct(p)}">${fmt(p, 0)} % completo</span>
+          <button data-desc="${c.id}" style="font-size:13px;padding:4px 10px">⤓ CSV</button></div></div>
+      <div class="leyenda">${c.series.map(s => `<span><i class="sw" style="background:${s.color}"></i>${s.nombre}</span>`).join('')}
+        <span><i class="hueco-sw"></i>Sin datos</span></div>
+      <div class="graf" id="g-${c.id}"></div></section>`;
+  }).join('');
+  document.querySelectorAll('[data-desc]').forEach(b => b.onclick = () => {
+    const c = COMP.find(x => x.id === b.dataset.desc);
+    bajarCSV(`${DIA}_${c.id}.csv`, FILAS, c.series.map(s => s.col));
+  });
+  COMP.forEach(c => grafico('g-' + c.id, c));
+}
+
+function grafico(cont, c) {
+  const el = $(cont), series = c.series; el.innerHTML = '';
   const pts = series.flatMap(s => FILAS.filter(f => f[s.col] != null).map(f => f[s.col]));
-  if (!pts.length) { el.innerHTML = '<div class="vacio">Sin lecturas para este día</div>'; return false; }
-  const W = el.clientWidth || 900, H = Math.max(220, Math.min(320, W * 0.38));
-  const m = { l: 48, r: 56, t: 10, b: 28 }, w = W - m.l - m.r, h = H - m.t - m.b;
+  if (!FILAS.length) { el.innerHTML = '<div class="vacio">Sin lecturas para este día</div>'; return; }
+  if (!pts.length) { el.innerHTML = `<div class="vacio">Sin datos de este componente en todo el día (100 % perdido)<br>¿Sensor sin conectar o fallando?</div>`; return; }
+  const W = el.clientWidth || 900, H = Math.max(200, Math.min(280, W * 0.32));
+  const m = { l: 46, r: 30, t: 10, b: 26 }, w = W - m.l - m.r, h = H - m.t - m.b;
   const t0 = FILAS[0].t, t1 = FILAS[FILAS.length - 1].t, span = Math.max(t1 - t0, 60000);
-  const ymax = Math.max(...pts) * 1.08 || 1, step = niceStep(ymax / 4);
-  const X = t => m.l + (t - t0) / span * w, Y = v => m.t + h - v / (Math.ceil(ymax / step) * step) * h;
-  const ytop = Math.ceil(ymax / step) * step;
-  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${series.map(x => x.nombre).join(' y ')}">`;
-  for (let v = 0; v <= ytop + 1e-9; v += step)
+  let ymin = Math.min(0, ...pts), ymax = Math.max(...pts);
+  if (c.unidad === '°C') { ymin = Math.floor(Math.min(...pts) / 5) * 5; ymax = Math.max(ymax, ymin + 5); }
+  const step = niceStep((ymax - ymin) / 4 || 1), y0 = Math.floor(ymin / step) * step, y1 = Math.ceil(ymax * 1.04 / step) * step || step;
+  const X = t => m.l + (t - t0) / span * w, Y = v => m.t + h - (v - y0) / (y1 - y0) * h;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${c.titulo}">`;
+  for (const g of series.flatMap(x => huecos([x.col])))     // hueco de cualquier serie del componente
+    s += `<rect x="${X(g.a)}" y="${m.t}" width="${Math.max(2, X(g.b) - X(g.a))}" height="${h}" fill="var(--warn)" opacity=".16"/>`;
+  for (let v = y0; v <= y1 + 1e-9; v += step)
     s += `<line x1="${m.l}" x2="${m.l + w}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="var(--text-muted)">${fmt(v)}</text>`;
-  const horas = Math.max(1, Math.ceil(span / 3.6e6 / 8));
-  const th = new Date(t0); th.setMinutes(0, 0, 0);
-  for (let t = +th; t <= +t1; t += horas * 3.6e6) if (t >= +t0)
-    s += `<text x="${X(t)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--text-muted)">${hhmm(new Date(t))}</text>`;
+  const pasoMin = [1, 2, 5, 10, 15, 30, 60, 120, 180, 240].find(p => span / 60000 / p <= 7) || 360;
+  const th = new Date(t0); th.setSeconds(0, 0); th.setMinutes(Math.ceil(th.getMinutes() / Math.min(pasoMin, 60)) * Math.min(pasoMin, 60));
+  if (pasoMin > 60) { th.setMinutes(0); th.setHours(Math.ceil(th.getHours() / (pasoMin / 60)) * (pasoMin / 60)); }
+  for (let t = +th; t <= +t1; t += pasoMin * 60000) if (t >= +t0)
+    s += `<text x="${X(t)}" y="${H - 7}" text-anchor="middle" font-size="11" fill="var(--text-muted)">${hhmm(new Date(t))}</text>`;
   s += `<line x1="${m.l}" x2="${m.l + w}" y1="${m.t + h}" y2="${m.t + h}" stroke="var(--axis)"/>`;
-  const etiquetas = [];
+  const etiq = [];
   for (const se of series) {
     let d = '', pen = false, prev = null, last = null;
     for (const f of FILAS) {
       const v = f[se.col];
-      if (v == null || (prev && f.t - prev > 5 * 60000)) pen = false;
+      if (v == null || (prev && f.t - prev > 90000)) pen = false;
       if (v != null) { d += (pen ? 'L' : 'M') + X(f.t).toFixed(1) + ' ' + Y(v).toFixed(1); pen = true; last = f; }
       prev = f.t;
     }
     s += `<path d="${d}" fill="none" stroke="${se.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
-    if (last && series.length > 1) etiquetas.push({ x: X(last.t) + 6, y: Y(last[se.col]) + 4, txt: se.corto });
+    if (last && series.length > 1) etiq.push({ x: X(last.t) + 6, y: Y(last[se.col]) + 4, txt: se.corto });
   }
-  etiquetas.sort((a, b) => a.y - b.y);
-  for (let i = 1; i < etiquetas.length; i++) if (etiquetas[i].y - etiquetas[i - 1].y < 13) etiquetas[i].y = etiquetas[i - 1].y + 13;
-  for (const e of etiquetas) s += `<text x="${e.x}" y="${e.y}" font-size="11.5" font-weight="600" fill="var(--text-secondary)">${e.txt}</text>`;
-  s += `<line id="${cont}-x" y1="${m.t}" y2="${m.t + h}" stroke="var(--axis)" stroke-dasharray="3 3" visibility="hidden"/>`;
-  series.forEach((se, i) => s += `<circle id="${cont}-c${i}" r="4.5" fill="${se.color}" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>`);
-  s += `<rect x="${m.l}" y="${m.t}" width="${w}" height="${h}" fill="transparent" id="${cont}-hit"/></svg><div class="tip" id="${cont}-tip"></div>`;
+  etiq.sort((a, b) => a.y - b.y);
+  for (let i = 1; i < etiq.length; i++) if (etiq[i].y - etiq[i - 1].y < 13) etiq[i].y = etiq[i - 1].y + 13;
+  for (const e of etiq) s += `<text x="${Math.min(e.x, W - 10)}" y="${e.y}" font-size="11.5" font-weight="600" fill="var(--text-secondary)">${e.txt}</text>`;
+  s += `<line class="cx" y1="${m.t}" y2="${m.t + h}" stroke="var(--axis)" stroke-dasharray="3 3" visibility="hidden"/>`;
+  series.forEach((se, i) => s += `<circle class="c${i}" r="4.5" fill="${se.color}" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>`);
+  s += `<rect class="hit" x="${m.l}" y="${m.t}" width="${w}" height="${h}" fill="transparent"/></svg><div class="tip"></div>`;
   el.innerHTML = s;
-  const hit = $(cont + '-hit'), tip = $(cont + '-tip'), cx = $(cont + '-x');
+  const svg = el.querySelector('svg'), tip = el.querySelector('.tip'), cx = el.querySelector('.cx');
   const mover = ev => {
-    const r = el.querySelector('svg').getBoundingClientRect(), k = W / r.width;
-    const px = ((ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left) * k;
-    const tt = +t0 + (px - m.l) / w * span;
+    const r = svg.getBoundingClientRect(), k = W / r.width;
+    const px = ((ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left) * k, tt = +t0 + (px - m.l) / w * span;
     let f = FILAS[0]; for (const x of FILAS) if (Math.abs(x.t - tt) < Math.abs(f.t - tt)) f = x;
     cx.setAttribute('x1', X(f.t)); cx.setAttribute('x2', X(f.t)); cx.setAttribute('visibility', 'visible');
-    series.forEach((se, i) => { const c = $(cont + '-c' + i);
-      if (f[se.col] == null) c.setAttribute('visibility', 'hidden');
-      else { c.setAttribute('cx', X(f.t)); c.setAttribute('cy', Y(f[se.col])); c.setAttribute('visibility', 'visible'); } });
+    series.forEach((se, i) => { const ci = el.querySelector('.c' + i);
+      if (f[se.col] == null) ci.setAttribute('visibility', 'hidden');
+      else { ci.setAttribute('cx', X(f.t)); ci.setAttribute('cy', Y(f[se.col])); ci.setAttribute('visibility', 'visible'); } });
     tip.innerHTML = `<b>${f.fecha.slice(11, 16)}</b><br>` + series.map(se =>
-      `<i class="sw" style="background:${se.color}"></i> ${se.nombre}: <b>${fmt(f[se.col])}</b> ${unidad}`).join('<br>');
+      `<i class="sw" style="background:${se.color}"></i> ${se.nombre}: <b>${f[se.col] == null ? '<span style="color:var(--bad)">sin dato</span>' : fmt(f[se.col], c.dec) + ' ' + c.unidad}</b>`).join('<br>');
     tip.style.display = 'block';
-    const left = X(f.t) / k; tip.style.left = Math.min(left + 12, r.width - tip.offsetWidth - 4) + 'px'; tip.style.top = '8px';
+    tip.style.left = Math.max(0, Math.min(X(f.t) / k + 12, r.width - tip.offsetWidth - 4)) + 'px'; tip.style.top = '6px';
   };
   const salir = () => { tip.style.display = 'none'; cx.setAttribute('visibility', 'hidden');
-    series.forEach((_, i) => $(cont + '-c' + i).setAttribute('visibility', 'hidden')); };
+    series.forEach((_, i) => el.querySelector('.c' + i).setAttribute('visibility', 'hidden')); };
+  const hit = el.querySelector('.hit');
   hit.addEventListener('mousemove', mover); hit.addEventListener('touchmove', mover, { passive: true });
   hit.addEventListener('mouseleave', salir); hit.addEventListener('touchend', salir);
-  return true;
 }
 function niceStep(x) { const p = Math.pow(10, Math.floor(Math.log10(x))), n = x / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p; }
 
-function tabla() {
-  const cols = [['fecha', 'Hora'], ['Pdc1_W', 'P arreglo 1 (W)'], ['Pdc6_W', 'P arreglo 6 (W)'], ['G_Wm2', 'G (W/m²)'],
-                ['Tc1_C', 'Tc1 (°C)'], ['Tc6_C', 'Tc6 (°C)'], ['Tamb_C', 'Tamb (°C)']];
-  const ult = FILAS.slice(-10).reverse();
-  $('tabla').innerHTML = '<tr>' + cols.map(c => `<th>${c[1]}</th>`).join('') + '</tr>' +
-    ult.map(f => '<tr>' + cols.map(([c]) => `<td>${c === 'fecha' ? f.fecha.slice(11) : fmt(f[c], c.endsWith('_C') ? 1 : 0)}</td>`).join('') + '</tr>').join('');
+function perdidos() {
+  const esp = minutosEsperados();
+  $('esperadas').textContent = FILAS.length
+    ? `De ${hhmm(FILAS[0].t)} a ${hhmm(FILAS[FILAS.length - 1].t)}: ${esp} lecturas esperadas (1 por minuto), ${FILAS.length} filas recibidas`
+    : 'Sin lecturas';
+  $('t-comp').innerHTML = '<tr><th>Componente</th><th>Min. válidos</th><th>Min. con NaN</th><th>Min. sin fila</th><th>% completo</th><th></th></tr>' +
+    COLS.map(s => { const q = completitud(s.col);
+      return `<tr><td><span style="display:inline-flex;gap:6px;align-items:center"><i class="sw" style="background:${s.color}"></i>${s.nombre}</span></td>
+        <td>${q.ok}</td><td>${q.nan}</td><td>${q.faltan}</td><td style="color:${colorPct(q.pct)};font-weight:600">${fmt(q.pct, 1)} %</td>
+        <td><div class="barra-pct"><i style="width:${q.pct}%;background:${colorPct(q.pct)}"></i></div></td></tr>`; }).join('');
+  const filas = COLS.flatMap(s => huecos([s.col]).map(g => ({ ...g, s })));
+  filas.sort((a, b) => b.a - a.a);
+  $('t-huecos').innerHTML = filas.length
+    ? '<tr><th>Componente</th><th class="izq">Desde</th><th class="izq">Hasta</th><th>Duración</th></tr>' +
+      filas.map(g => `<tr><td><span style="display:inline-flex;gap:6px;align-items:center"><i class="sw" style="background:${g.s.color}"></i>${g.s.nombre}</span></td>
+        <td class="izq">${hhmm(g.a)}</td><td class="izq">${g.abierto ? 'sigue' : hhmm(g.b)}</td><td>${g.todo ? 'todo el día' : dur((g.b - g.a) / 60000)}</td></tr>`).join('')
+    : '<tr><td class="vacio">Sin huecos: todos los componentes completos</td></tr>';
 }
 
+function tablaTodo() {
+  $('n-filas').textContent = `${FILAS.length} filas`;
+  $('t-todo').innerHTML = '<tr><th>Hora</th>' + COLS.map(s => `<th>${s.nombre}</th>`).join('') + '</tr>' +
+    FILAS.slice().reverse().map(f => `<tr><td>${f.fecha.slice(11)}</td>` +
+      COLS.map(s => f[s.col] == null ? '<td class="nan">NaN</td>' : `<td>${fmt(f[s.col], s.col.endsWith('_C') ? 1 : 0)}</td>`).join('') + '</tr>').join('');
+}
+
+// ---------- descargas ----------
+function bajarCSV(nombre, filas, cols) {
+  const txt = ['fecha,' + cols.join(',')].concat(filas.map(f => [f.fecha, ...cols.map(c => f[c] == null ? 'NaN' : f[c])].join(','))).join('\n') + '\n';
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/csv' }));
+  a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
+}
+$('b-rango').onclick = async () => {
+  const cols = [...document.querySelectorAll('#checks input:checked')].map(i => i.value);
+  const d0 = $('desde').value, d1 = $('hasta').value;
+  if (!cols.length) { $('n-rango').textContent = 'Elegí al menos un componente.'; return; }
+  const dias = DIAS.filter(d => d >= (d0 < d1 ? d0 : d1) && d <= (d0 < d1 ? d1 : d0));
+  $('n-rango').textContent = `Preparando ${dias.length} día(s)…`;
+  let todas = [];
+  for (const d of dias) { const r = await fetch(`datos/${d}.csv` + nocache()); if (r.ok) todas = todas.concat(parseCSV(await r.text())); }
+  bajarCSV(`pv_${dias[0]}_a_${dias[dias.length - 1]}.csv`, todas, cols);
+  $('n-rango').textContent = `Listo: ${todas.length} filas, ${dias.length} día(s), columnas: ${cols.join(', ')}`;
+};
+
 function dibujar() {
-  tiles(); estado(); tabla();
-    grafico('g-p', [{ col: 'Pdc1_W', nombre: 'Arreglo 1', corto: '1', color: 'var(--s1)' },
-                  { col: 'Pdc6_W', nombre: 'Arreglo 6', corto: '6', color: 'var(--s6)' }], 'W');
-  const hayG = grafico('g-g', [{ col: 'G_Wm2', nombre: 'Irradiancia', corto: 'G', color: 'var(--sg)' }], 'W/m²');
-  $('card-g').style.display = hayG ? '' : 'none';
+  estado(); tiles(); cards(); perdidos(); tablaTodo();
 }
 
 async function cargarDia(d) {
@@ -266,20 +402,22 @@ async function cargarDia(d) {
 }
 
 async function iniciar() {
-  try {
-    const r = await fetch('datos/dias.json' + nocache());
-    DIAS = r.ok ? await r.json() : [];
-  } catch (e) { DIAS = []; }
+  try { const r = await fetch('datos/dias.json' + nocache()); DIAS = r.ok ? await r.json() : []; } catch (e) { DIAS = []; }
   if (!DIAS.length) { $('estado-txt').textContent = 'Todavía no hay datos publicados'; $('estado').className = 'estado mal'; return; }
-  $('dia').innerHTML = DIAS.slice().reverse().map(d => `<option>${d}</option>`).join('');
+  const opts = DIAS.slice().reverse().map(d => `<option>${d}</option>`).join('');
+  const sel = { dia: $('dia').value, desde: $('desde').value, hasta: $('hasta').value };
+  $('dia').innerHTML = opts; $('desde').innerHTML = opts; $('hasta').innerHTML = opts;
+  $('desde').value = sel.desde || DIAS[0]; $('hasta').value = sel.hasta || DIAS[DIAS.length - 1];
+  if (!$('checks').children.length)
+    $('checks').innerHTML = COLS.map(s => `<label><input type="checkbox" value="${s.col}" checked><i class="sw" style="background:${s.color}"></i>${s.nombre}</label>`).join('');
   $('dias').innerHTML = DIAS.slice().reverse().map(d => `<a class="btn" href="datos/${d}.csv" download>${d}</a>`).join('');
-  const sigueEnUltimo = !DIA || DIA === DIAS[DIAS.length - 2] || DIA === DIAS[DIAS.length - 1];
-  await cargarDia(sigueEnUltimo ? DIAS[DIAS.length - 1] : DIA);
+  const enUltimo = !DIA || DIA === DIAS[DIAS.length - 1] || DIA === DIAS[DIAS.length - 2];
+  await cargarDia(enUltimo ? DIAS[DIAS.length - 1] : DIA);
 }
 $('dia').onchange = e => cargarDia(e.target.value);
 $('ant').onclick = () => { const i = DIAS.indexOf(DIA); if (i > 0) cargarDia(DIAS[i - 1]); };
 $('sig').onclick = () => { const i = DIAS.indexOf(DIA); if (i < DIAS.length - 1) cargarDia(DIAS[i + 1]); };
-window.addEventListener('resize', () => FILAS.length && dibujar());
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => FILAS.length && cards(), 150); });
 iniciar();
 setInterval(iniciar, 5 * 60 * 1000);
 </script>
