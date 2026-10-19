@@ -152,7 +152,7 @@ td.nan { color: var(--bad); }
       <h2>Archivos diarios completos</h2>
       <div class="sub" style="margin-bottom:8px">Un CSV por día con todas las columnas</div>
       <div class="dias" id="dias"></div>
-      <div class="nota">Columnas: fecha, G_Wm2, Tc1_C, Tc6_C, Tamb_C, Pdc1_W, Pdc6_W · NaN = lectura no disponible</div>
+      <div class="nota">Columnas: fecha, G_Wm2, Tc1_C, Tc6_C, Tamb1_C, Tamb6_C, HR1_pct, HR6_pct, Pdc1_W, Pdc6_W (días anteriores al 18/10: Tamb_C) · NaN = lectura no disponible</div>
     </div>
   </section>
 </main>
@@ -172,8 +172,12 @@ const COMP = [
   { id: 'tc', titulo: 'Temperatura de celda', fuente: 'DS18B20 bajo los paneles (1-Wire)', unidad: '°C', dec: 1,
     series: [{ col: 'Tc1_C', nombre: 'Celda arreglo 1', corto: '1', color: 'var(--s1)' },
              { col: 'Tc6_C', nombre: 'Celda arreglo 6', corto: '6', color: 'var(--s6)' }] },
-  { id: 'amb', titulo: 'Temperatura ambiente', fuente: 'DHT22 a la sombra', unidad: '°C', dec: 1,
-    series: [{ col: 'Tamb_C', nombre: 'Ambiente', corto: 'A', color: 'var(--sa)' }] },
+  { id: 'amb', titulo: 'Temperatura ambiente', fuente: 'DHT11 en cada arreglo (pin 11 y pin 13)', unidad: '°C', dec: 1,
+    series: [{ col: 'Tamb1_C', nombre: 'Ambiente arreglo 1', corto: '1', color: 'var(--s1)' },
+             { col: 'Tamb6_C', nombre: 'Ambiente arreglo 6', corto: '6', color: 'var(--s6)' }] },
+  { id: 'hr', titulo: 'Humedad relativa', fuente: 'DHT11 en cada arreglo', unidad: '%', dec: 0,
+    series: [{ col: 'HR1_pct', nombre: 'Humedad arreglo 1', corto: '1', color: 'var(--s1)' },
+             { col: 'HR6_pct', nombre: 'Humedad arreglo 6', corto: '6', color: 'var(--s6)' }] },
 ];
 const COLS = COMP.flatMap(c => c.series);
 const NOMBRE = Object.fromEntries(COLS.map(s => [s.col, s.nombre]));
@@ -248,6 +252,8 @@ function tiles() {
     ['Energía arreglo 6', fmt(e6 / 1000, 2), 'kWh', 'var(--s6)'],
     ['Razón 1 / 6', e6 > 0 ? fmt(e1 / e6, 3) : '—', '', null],
     ['Irradiancia', fmt(ultimo('G_Wm2')), 'W/m²', null],
+    ['T amb. arreglo 1', fmt(ultimo('Tamb1_C'), 1), '°C', 'var(--s1)'],
+    ['T amb. arreglo 6', fmt(ultimo('Tamb6_C'), 1), '°C', 'var(--s6)'],
   ];
   $('tiles').innerHTML = T.map(([k, v, u, c]) =>
     `<div class="tile"><div class="k">${c ? `<i class="sw" style="background:${c}"></i>` : ''}${k}</div><div class="v">${v}<span class="u">${u}</span></div></div>`).join('');
@@ -290,6 +296,7 @@ function grafico(cont, c) {
   const m = { l: 46, r: 30, t: 10, b: 26 }, w = W - m.l - m.r, h = H - m.t - m.b;
   const t0 = FILAS[0].t, t1 = FILAS[FILAS.length - 1].t, span = Math.max(t1 - t0, 60000);
   let ymin = Math.min(0, ...pts), ymax = Math.max(...pts);
+  if (c.unidad === '%') { ymin = 0; ymax = 96; }      // eje 0-100 %
   if (c.unidad === '°C') { ymin = Math.floor(Math.min(...pts) / 5) * 5; ymax = Math.max(ymax, ymin + 5); }
   const step = niceStep((ymax - ymin) / 4 || 1), y0 = Math.floor(ymin / step) * step, y1 = Math.ceil(ymax * 1.04 / step) * step || step;
   const X = t => m.l + (t - t0) / span * w, Y = v => m.t + h - (v - y0) / (y1 - y0) * h;
