@@ -91,7 +91,7 @@ td.nan { color: var(--bad); }
   <header>
     <div>
       <h1>Rendimiento de los arreglos FV 1 y 6</h1>
-      <div class="sub">EL-5656 · TEC San Carlos · Grupo 4 · una lectura por minuto, publicada cada 15 min</div>
+      <div class="sub">EL-5656 · TEC San Carlos · Grupo 4 · una lectura por minuto, publicada cada 6 min</div>
     </div>
     <div id="estado" class="estado"><span class="punto"></span><span id="estado-txt">Cargando…</span></div>
   </header>
@@ -426,7 +426,7 @@ $('ant').onclick = () => { const i = DIAS.indexOf(DIA); if (i > 0) cargarDia(DIA
 $('sig').onclick = () => { const i = DIAS.indexOf(DIA); if (i < DIAS.length - 1) cargarDia(DIAS[i + 1]); };
 let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => FILAS.length && cards(), 150); });
 iniciar();
-setInterval(iniciar, 5 * 60 * 1000);
+setInterval(iniciar, 60 * 1000);
 </script>
 </body>
 </html>
