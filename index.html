@@ -195,10 +195,24 @@ document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => {
 });
 
 function parseCSV(txt) {
-  const l = txt.trim().split(/\r?\n/); const cab = l.shift().split(',');
-  return l.filter(r => r.trim()).map(r => { const v = r.split(','); const o = {};
-    cab.forEach((c, i) => o[c] = c === 'fecha' ? v[i] : (v[i] === undefined || v[i] === 'NaN' || v[i] === '' ? null : +v[i]));
-    o.t = new Date(o.fecha.replace(' ', 'T')); return o; });
+  const l = txt.trim().split(/\r?\n/), cab = l.shift().split(',').map(c => c.trim());
+  if (!cab.includes('fecha')) return [];
+  const filas = [];
+  for (const r of l) {
+    if (!r.trim()) continue;
+    const v = r.split(',');
+    if (v.length !== cab.length) continue;
+    const o = {};
+    cab.forEach((c, i) => {
+      const valor = v[i].trim();
+      o[c] = c === 'fecha' ? valor : (valor !== '' && Number.isFinite(+valor) ? +valor : null);
+    });
+    o.t = new Date(o.fecha.replace(' ', 'T'));
+    // Una fecha dañada no debe producir coordenadas NaN ni cortar las series siguientes.
+    if (!Number.isFinite(o.t.getTime())) continue;
+    filas.push(o);
+  }
+  return filas.sort((a, b) => a.t - b.t);
 }
 const fmt = (x, d = 0) => x == null || isNaN(x) ? '—' : x.toLocaleString('es-CR', { minimumFractionDigits: d, maximumFractionDigits: d });
 const hhmm = t => t.toTimeString().slice(0, 5);
