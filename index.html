@@ -130,6 +130,10 @@ td.nan { color: var(--bad); }
       <div class="graf" id="g-eta"></div>
     </section>
     <section class="card">
+      <div class="card-cab"><div><h2>Razón entre inversores Pdc1 / Pdc6</h2><div class="sub" id="sub-razon"></div></div></div>
+      <div class="graf" id="g-razon"></div>
+    </section>
+    <section class="card">
       <h2>Intervalos de 15 min</h2>
       <div class="tabla"><table id="t-rend"></table></div>
     </section>
@@ -303,6 +307,10 @@ function calcularModelo() {
     f['Tcm' + k] = tc ?? null; f['TcEst' + k] = est;
     f['Pteo' + k + '_W'] = (G == null || tc == null) ? null : G <= 0 ? 0 : a.N * a.P * G / 1000 * (1 + a.g * (tc - 25)) * fEnv(f.t, a) * F_SIS;
   }
+  for (const f of FILAS) {          // razón entre inversores (solo con producción apreciable)
+    const p1 = f.Pdc1_W, p6 = f.Pdc6_W;
+    f.R16 = p1 != null && p6 != null && p1 > 50 && p6 > 50 ? p1 / p6 : null;
+  }
   const m = new Map();
   for (const f of FILAS) {
     const key = Math.floor((f.t.getHours() * 60 + f.t.getMinutes()) / 15);
@@ -342,6 +350,8 @@ function tiles() {
     ['Arreglo 6 ahora', fmt(ultimo('Pdc6_W')), 'W', 'var(--s6)'],
     ['Energía DC arreglo 1', fmt(e1 / 1000, 2), 'kWh', 'var(--s1)'],
     ['Energía DC arreglo 6', fmt(e6 / 1000, 2), 'kWh', 'var(--s6)'],
+    ['Potencia total ahora', ultimo('Pdc1_W') != null && ultimo('Pdc6_W') != null ? fmt(ultimo('Pdc1_W') + ultimo('Pdc6_W')) : '—', 'W', null],
+    ['Energía DC total (1 + 6)', fmt((e1 + e6) / 1000, 2), 'kWh', null],
     ['Rendimiento arreglo 1', fmt(resumenRend('1').eta, 1), '%', 'var(--s1)'],
     ['Rendimiento arreglo 6', fmt(resumenRend('6').eta, 1), '%', 'var(--s6)'],
     ['Razón 1 / 6', e6 > 0 ? fmt(e1 / e6, 3) : '—', '', null],
@@ -356,9 +366,10 @@ function tiles() {
 function estado() {
   const el = $('estado'); const u = FILAS.length ? FILAS[FILAS.length - 1].t : null;
   if (!u) { el.className = 'estado mal'; $('estado-txt').textContent = 'Sin datos'; return; }
-  const min = (Date.now() - u) / 60000, hoy = DIA === DIAS[DIAS.length - 1], ok = hoy && min < 30;
+  const min = (Date.now() - u) / 60000, hoy = DIA === DIAS[DIAS.length - 1], ok = hoy && min < 10;
   el.className = 'estado ' + (ok ? 'ok' : 'mal');
-  $('estado-txt').textContent = hoy ? (ok ? 'Midiendo · ' : 'Sin datos nuevos · ') + `última lectura hace ${min < 1 ? '<1' : Math.round(min)} min`
+  $('estado-txt').textContent = hoy ? (ok ? `Midiendo · última lectura hace ${min < 1 ? '<1' : Math.round(min)} min`
+                                          : `⚠ Sin datos desde las ${hhmm(u)} (hace ${dur(min)}) · ¿Pi apagada o sin red?`)
                                     : `Día archivado · última lectura ${hhmm(u)}`;
 }
 
@@ -476,6 +487,10 @@ function rendimiento() {
     { col: 'eta1', nombre: 'Arreglo 1', corto: '1', color: 'var(--s1)' },
     { col: 'eta6', nombre: 'Arreglo 6', corto: '6', color: 'var(--s6)' }] };
   $('ley-eta').innerHTML = cEta.series.map(s => `<span><i class="sw" style="background:${s.color}"></i>${s.nombre}</span>`).join('') + '<span>··· 100 % = igual al modelo</span>';
+  const rNom = ARREGLO['1'].N * ARREGLO['1'].P / (ARREGLO['6'].N * ARREGLO['6'].P);
+  $('sub-razon').textContent = `solo con ambos > 50 W · ··· ${fmt(rNom, 3)} = razón de potencias nominales (${ARREGLO['1'].N * ARREGLO['1'].P} W / ${ARREGLO['6'].N * ARREGLO['6'].P} W) · caídas bruscas = sombra o falla en un arreglo`;
+  grafico('g-razon', { titulo: 'Razón Pdc1/Pdc6', unidad: '', dec: 3, libre: true, ref: rNom,
+    series: [{ col: 'R16', nombre: 'Pdc1 / Pdc6', corto: 'R', color: 'var(--sg)' }] }, FILAS);
   if (filasEta.length) grafico('g-eta', cEta, filasEta);
   else $('g-eta').innerHTML = '<div class="vacio">Todavía no hay intervalos de 15 min válidos este día (G ≥ 200 W/m²)</div>';
   $('t-rend').innerHTML = '<tr><th class="izq">Intervalo</th><th>G media</th><th>E medida 1</th><th>E teórica 1</th><th>η 1</th><th>E medida 6</th><th>E teórica 6</th><th>η 6</th></tr>' +
