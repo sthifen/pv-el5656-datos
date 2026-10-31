@@ -106,6 +106,7 @@ td.nan { color: var(--bad); }
 
   <nav class="tabs">
     <button data-v="v-graf" class="on">Gráficas</button>
+    <button data-v="v-rend">Rendimiento</button>
     <button data-v="v-perdidos">Datos perdidos</button>
     <button data-v="v-tabla">Tabla</button>
     <button data-v="v-desc">Descargas</button>
@@ -114,6 +115,28 @@ td.nan { color: var(--bad); }
   <section id="v-graf" class="vista on">
     <div class="tiles" id="tiles"></div>
     <div id="cards"></div>
+  </section>
+
+  <section id="v-rend" class="vista">
+    <div class="tiles" id="tiles-rend"></div>
+    <section class="card">
+      <div class="card-cab"><div><h2>Potencia DC medida y teórica</h2><div class="sub">W · línea continua = medida (inversor) · punteada = modelo</div></div></div>
+      <div class="leyenda" id="ley-pt"></div>
+      <div class="graf" id="g-pt"></div>
+    </section>
+    <section class="card">
+      <div class="card-cab"><div><h2>Rendimiento experimental cada 15 min</h2><div class="sub">% · η = E medida / E teórica · solo intervalos con G ≥ 200 W/m² y ≥ 12 de 15 lecturas</div></div></div>
+      <div class="leyenda" id="ley-eta"></div>
+      <div class="graf" id="g-eta"></div>
+    </section>
+    <section class="card">
+      <h2>Intervalos de 15 min</h2>
+      <div class="tabla"><table id="t-rend"></table></div>
+    </section>
+    <section class="card">
+      <h2>Modelo</h2>
+      <div class="nota" style="font-size:13px;color:var(--text-secondary)" id="modelo"></div>
+    </section>
   </section>
 
   <section id="v-perdidos" class="vista">
@@ -152,7 +175,7 @@ td.nan { color: var(--bad); }
       <h2>Archivos diarios completos</h2>
       <div class="sub" style="margin-bottom:8px">Un CSV por día con todas las columnas</div>
       <div class="dias" id="dias"></div>
-      <div class="nota">Columnas: fecha, G_Wm2, Tc1_C, Tc6_C, Tamb1_C, Tamb6_C, HR1_pct, HR6_pct, Pdc1_W, Pdc6_W (días anteriores al 18/10: Tamb_C) · NaN = lectura no disponible</div>
+      <div class="nota">Columnas: fecha, G_Wm2, Tc1_C, Tc6_C, Tamb1_C, Tamb6_C, HR1_pct, HR6_pct, Pdc1_W, Pdc6_W, Vdc1_V, Vdc6_V, Idc1_A, Idc6_A (Vdc/Idc desde el 31/10; días anteriores al 18/10: Tamb_C) · NaN = lectura no disponible</div>
     </div>
   </section>
 </main>
@@ -164,18 +187,24 @@ let DIAS = [], DIA = null, FILAS = [];
 
 // Componentes del sistema: cada uno con su gráfica, su chip de completitud y su descarga
 const COMP = [
-  { id: 'pot', titulo: 'Potencia DC', fuente: 'Inversores SMA Sunny Boy 3.8 (Modbus TCP / web)', unidad: 'W', dec: 0,
+  { id: 'pot', titulo: 'Potencia DC', fuente: 'Lado DC de los inversores SMA Sunny Boy 3.8', unidad: 'W', dec: 0,
     series: [{ col: 'Pdc1_W', nombre: 'Arreglo 1 (inversor .91)', corto: '1', color: 'var(--s1)' },
              { col: 'Pdc6_W', nombre: 'Arreglo 6 (inversor .96)', corto: '6', color: 'var(--s6)' }] },
+  { id: 'vdc', titulo: 'Voltaje DC', fuente: 'Lado DC de los inversores (entrada A)', unidad: 'V', dec: 1,
+    series: [{ col: 'Vdc1_V', nombre: 'Voltaje arreglo 1', corto: '1', color: 'var(--s1)' },
+             { col: 'Vdc6_V', nombre: 'Voltaje arreglo 6', corto: '6', color: 'var(--s6)' }] },
+  { id: 'idc', titulo: 'Corriente DC', fuente: 'Lado DC de los inversores', unidad: 'A', dec: 2,
+    series: [{ col: 'Idc1_A', nombre: 'Corriente arreglo 1', corto: '1', color: 'var(--s1)' },
+             { col: 'Idc6_A', nombre: 'Corriente arreglo 6', corto: '6', color: 'var(--s6)' }] },
   { id: 'irr', titulo: 'Irradiancia', fuente: 'Spektron 210 + ADS1115, en el plano de los paneles', unidad: 'W/m²', dec: 0,
     series: [{ col: 'G_Wm2', nombre: 'Irradiancia', corto: 'G', color: 'var(--sg)' }] },
   { id: 'tc', titulo: 'Temperatura de celda', fuente: 'DS18B20 bajo los paneles (1-Wire)', unidad: '°C', dec: 1,
     series: [{ col: 'Tc1_C', nombre: 'Celda arreglo 1', corto: '1', color: 'var(--s1)' },
              { col: 'Tc6_C', nombre: 'Celda arreglo 6', corto: '6', color: 'var(--s6)' }] },
-  { id: 'amb', titulo: 'Temperatura ambiente', fuente: 'DHT11 en cada arreglo (pin 11 y pin 13)', unidad: '°C', dec: 1,
+  { id: 'amb', titulo: 'Temperatura ambiente', fuente: 'DHT22 en cada arreglo', unidad: '°C', dec: 1,
     series: [{ col: 'Tamb1_C', nombre: 'Ambiente arreglo 1', corto: '1', color: 'var(--s1)' },
              { col: 'Tamb6_C', nombre: 'Ambiente arreglo 6', corto: '6', color: 'var(--s6)' }] },
-  { id: 'hr', titulo: 'Humedad relativa', fuente: 'DHT11 en cada arreglo', unidad: '%', dec: 0,
+  { id: 'hr', titulo: 'Humedad relativa', fuente: 'DHT22 en cada arreglo', unidad: '%', dec: 0,
     series: [{ col: 'HR1_pct', nombre: 'Humedad arreglo 1', corto: '1', color: 'var(--s1)' },
              { col: 'HR6_pct', nombre: 'Humedad arreglo 6', corto: '6', color: 'var(--s6)' }] },
 ];
@@ -191,7 +220,7 @@ $('tema').onclick = () => {
 document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => {
   document.querySelectorAll('nav.tabs button').forEach(x => x.classList.toggle('on', x === b));
   document.querySelectorAll('.vista').forEach(v => v.classList.toggle('on', v.id === b.dataset.v));
-  if (b.dataset.v === 'v-graf') dibujar();
+  if (b.dataset.v === 'v-graf' || b.dataset.v === 'v-rend') dibujar();
 });
 
 function parseCSV(txt) {
@@ -247,14 +276,63 @@ function completitud(col) {
 const colorPct = p => p >= 95 ? 'var(--good)' : p >= 50 ? 'var(--warn)' : 'var(--bad)';
 
 // ---------- vistas ----------
-function energia(col) {
-  let e = 0;
-  for (let i = 1; i < FILAS.length; i++) {
-    const a = FILAS[i - 1], b = FILAS[i], dt = (b.t - a.t) / 3.6e6;
-    if (a[col] != null && b[col] != null && dt > 0 && dt < 5 / 60) e += (a[col] + b[col]) / 2 * dt;
+function energia(col) {          // energía DC del día: E = ∫ Pdc dt (trapecios; huecos < 1 h se interpolan)
+  const F = FILAS.filter(f => f[col] != null); let e = 0;
+  for (let i = 1; i < F.length; i++) {
+    const dt = (F[i].t - F[i - 1].t) / 3.6e6;
+    if (dt > 0 && dt < 1) e += (F[i - 1][col] + F[i][col]) / 2 * dt;
   }
   return e;
 }
+// ---------- modelo teórico (mismo que matlab/eficiencia_arreglos.m) ----------
+// P_teo = N·P_STC·(G/1000)·[1 + γ(Tc − 25)]·f_env(t)·f_sis
+const ARREGLO = {
+  '1': { N: 10, P: 260, g: -0.0041, eff: 0.156,  noct: 45, a1: 0.03, an: 0.006, panel: 'Q CELLS Q.PRO BFR-G4.3 260 W' },
+  '6': { N: 10, P: 280, g: -0.0041, eff: 0.1711, noct: 43, a1: 0.03, an: 0.007, panel: 'Canadian Solar CS6K-280M' },
+};
+const INSTALACION = new Date('2018-01-01T00:00:00');
+const F_SIS = 0.98 * 0.98 * 0.995 * 0.99;   // desajuste, cableado DC, conectores, placa (PVWatts)
+const G_MIN = 200, MIN_LECT = 12;
+const fEnv = (t, a) => { const y = Math.max(0, (t - INSTALACION) / (365.25 * 864e5)); return 1 - a.a1 * Math.min(y, 1) - a.an * Math.max(y - 1, 0); };
+let SLOTS = [];
+function calcularModelo() {
+  for (const f of FILAS) for (const k of ['1', '6']) {
+    const a = ARREGLO[k], G = f.G_Wm2, ta = f['Tamb' + k + '_C'] ?? f.Tamb_C;
+    let tc = f['Tc' + k + '_C'], est = false;
+    if (tc == null && ta != null && G != null) { tc = ta + (a.noct - 20) / 800 * Math.max(G, 0); est = true; }
+    f['Tcm' + k] = tc ?? null; f['TcEst' + k] = est;
+    f['Pteo' + k + '_W'] = (G == null || tc == null) ? null : G <= 0 ? 0 : a.N * a.P * G / 1000 * (1 + a.g * (tc - 25)) * fEnv(f.t, a) * F_SIS;
+  }
+  const m = new Map();
+  for (const f of FILAS) {
+    const key = Math.floor((f.t.getHours() * 60 + f.t.getMinutes()) / 15);
+    if (!m.has(key)) m.set(key, { key, n: { '1': 0, '6': 0 }, G: { '1': 0, '6': 0 }, E: { '1': 0, '6': 0 }, Et: { '1': 0, '6': 0 } });
+    const s = m.get(key);
+    for (const k of ['1', '6']) {
+      const P = f['Pdc' + k + '_W'], Pt = f['Pteo' + k + '_W'];
+      if (f.G_Wm2 == null || P == null || Pt == null) continue;
+      s.n[k]++; s.G[k] += f.G_Wm2; s.E[k] += P / 60; s.Et[k] += Pt / 60;   // Wh (1 lectura/min)
+    }
+  }
+  SLOTS = [...m.values()].sort((a, b) => a.key - b.key).map(s => {
+    const o = { key: s.key, hora: `${String(Math.floor(s.key / 4)).padStart(2, '0')}:${String(s.key % 4 * 15).padStart(2, '0')}` };
+    for (const k of ['1', '6']) {
+      const n = s.n[k], Gm = n ? s.G[k] / n : null, H = s.G[k] / 60;
+      o['G' + k] = Gm; o['H' + k] = H; o['E' + k] = s.E[k]; o['Et' + k] = s.Et[k];
+      o['ok' + k] = n >= MIN_LECT && Gm >= G_MIN && s.Et[k] > 0;
+      o['eta' + k] = o['ok' + k] ? 100 * s.E[k] / s.Et[k] : null;
+    }
+    return o;
+  });
+}
+function resumenRend(k) {
+  const a = ARREGLO[k], v = SLOTS.filter(s => s['ok' + k]);
+  const E = v.reduce((x, s) => x + s['E' + k], 0), Et = v.reduce((x, s) => x + s['Et' + k], 0), H = v.reduce((x, s) => x + s['H' + k], 0);
+  const area = a.N * a.P / (1000 * a.eff);
+  return { n: v.length, E, Et, H, eta: Et > 0 ? 100 * E / Et : null,
+           PR: H > 0 ? 100 * E / (a.N * a.P * H / 1000) : null, etaS: H > 0 ? 100 * E / (H * area) : null };
+}
+
 function ultimo(col) { for (let i = FILAS.length - 1; i >= 0; i--) if (FILAS[i][col] != null) return FILAS[i][col]; return null; }
 
 function tiles() {
@@ -262,8 +340,10 @@ function tiles() {
   const T = [
     ['Arreglo 1 ahora', fmt(ultimo('Pdc1_W')), 'W', 'var(--s1)'],
     ['Arreglo 6 ahora', fmt(ultimo('Pdc6_W')), 'W', 'var(--s6)'],
-    ['Energía arreglo 1', fmt(e1 / 1000, 2), 'kWh', 'var(--s1)'],
-    ['Energía arreglo 6', fmt(e6 / 1000, 2), 'kWh', 'var(--s6)'],
+    ['Energía DC arreglo 1', fmt(e1 / 1000, 2), 'kWh', 'var(--s1)'],
+    ['Energía DC arreglo 6', fmt(e6 / 1000, 2), 'kWh', 'var(--s6)'],
+    ['Rendimiento arreglo 1', fmt(resumenRend('1').eta, 1), '%', 'var(--s1)'],
+    ['Rendimiento arreglo 6', fmt(resumenRend('6').eta, 1), '%', 'var(--s6)'],
     ['Razón 1 / 6', e6 > 0 ? fmt(e1 / e6, 3) : '—', '', null],
     ['Irradiancia', fmt(ultimo('G_Wm2')), 'W/m²', null],
     ['T amb. arreglo 1', fmt(ultimo('Tamb1_C'), 1), '°C', 'var(--s1)'],
@@ -283,25 +363,26 @@ function estado() {
 }
 
 function cards() {
-  $('cards').innerHTML = COMP.map(c => {
+  const existe = c => FILAS.length && c.series.some(s => s.col in FILAS[0]);
+  const VIS = COMP.filter(existe);
+  $('cards').innerHTML = VIS.map(c => {
     const pcts = c.series.map(s => completitud(s.col).pct), p = Math.min(...pcts);
     return `<section class="card">
       <div class="card-cab"><div><h2>${c.titulo}</h2><div class="sub">${c.unidad} · ${c.fuente}</div></div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
           <span class="chip" style="color:${colorPct(p)}">${fmt(p, 0)} % completo</span>
           <button data-desc="${c.id}" style="font-size:13px;padding:4px 10px">⤓ CSV</button></div></div>
-      <div class="leyenda">${c.series.map(s => `<span><i class="sw" style="background:${s.color}"></i>${s.nombre}</span>`).join('')}
-        <span><i class="hueco-sw"></i>Sin datos</span></div>
+      <div class="leyenda">${c.series.map(s => `<span><i class="sw" style="background:${s.color}"></i>${s.nombre}</span>`).join('')}</div>
       <div class="graf" id="g-${c.id}"></div></section>`;
   }).join('');
   document.querySelectorAll('[data-desc]').forEach(b => b.onclick = () => {
     const c = COMP.find(x => x.id === b.dataset.desc);
     bajarCSV(`${DIA}_${c.id}.csv`, FILAS, c.series.map(s => s.col));
   });
-  COMP.forEach(c => grafico('g-' + c.id, c));
+  VIS.forEach(c => grafico('g-' + c.id, c));
 }
 
-function grafico(cont, c) {
+function grafico(cont, c, FILAS = window.FILAS_ACT) {
   const el = $(cont), series = c.series; el.innerHTML = '';
   const pts = series.flatMap(s => FILAS.filter(f => f[s.col] != null).map(f => f[s.col]));
   if (!FILAS.length) { el.innerHTML = '<div class="vacio">Sin lecturas para este día</div>'; return; }
@@ -310,13 +391,13 @@ function grafico(cont, c) {
   const m = { l: 46, r: 30, t: 10, b: 26 }, w = W - m.l - m.r, h = H - m.t - m.b;
   const t0 = FILAS[0].t, t1 = FILAS[FILAS.length - 1].t, span = Math.max(t1 - t0, 60000);
   let ymin = Math.min(0, ...pts), ymax = Math.max(...pts);
-  if (c.unidad === '%') { ymin = 0; ymax = 96; }      // eje 0-100 %
+  if (c.unidad === '%' && !c.libre) { ymin = 0; ymax = 96; }      // eje 0-100 %
+  if (c.libre) { ymin = Math.max(0, Math.floor(Math.min(...pts, c.ref ?? Infinity) / 10) * 10); ymax = Math.max(ymax, c.ref ?? 0); }
   if (c.unidad === '°C') { ymin = Math.floor(Math.min(...pts) / 5) * 5; ymax = Math.max(ymax, ymin + 5); }
   const step = niceStep((ymax - ymin) / 4 || 1), y0 = Math.floor(ymin / step) * step, y1 = Math.ceil(ymax * 1.04 / step) * step || step;
   const X = t => m.l + (t - t0) / span * w, Y = v => m.t + h - (v - y0) / (y1 - y0) * h;
   let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${c.titulo}">`;
-  for (const g of series.flatMap(x => huecos([x.col])))     // hueco de cualquier serie del componente
-    s += `<rect x="${X(g.a)}" y="${m.t}" width="${Math.max(2, X(g.b) - X(g.a))}" height="${h}" fill="var(--warn)" opacity=".16"/>`;
+  if (c.ref != null) s += `<line x1="${m.l}" x2="${m.l + w}" y1="${Y(c.ref)}" y2="${Y(c.ref)}" stroke="var(--text-muted)" stroke-dasharray="2 4"/>`;
   for (let v = y0; v <= y1 + 1e-9; v += step)
     s += `<line x1="${m.l}" x2="${m.l + w}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="var(--text-muted)">${fmt(v)}</text>`;
   const pasoMin = [1, 2, 5, 10, 15, 30, 60, 120, 180, 240].find(p => span / 60000 / p <= 7) || 360;
@@ -330,11 +411,11 @@ function grafico(cont, c) {
     let d = '', pen = false, prev = null, last = null;
     for (const f of FILAS) {
       const v = f[se.col];
-      if (v == null || (prev && f.t - prev > 90000)) pen = false;
       if (v != null) { d += (pen ? 'L' : 'M') + X(f.t).toFixed(1) + ' ' + Y(v).toFixed(1); pen = true; last = f; }
       prev = f.t;
     }
-    s += `<path d="${d}" fill="none" stroke="${se.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    s += `<path d="${d}" fill="none" stroke="${se.color}" stroke-width="${se.dash ? 1.6 : 2}" ${se.dash ? 'stroke-dasharray="5 4"' : ''} stroke-linejoin="round" stroke-linecap="round"/>`;
+    if (c.puntos) for (const f of FILAS) if (f[se.col] != null) s += `<circle cx="${X(f.t).toFixed(1)}" cy="${Y(f[se.col]).toFixed(1)}" r="3" fill="${se.color}"/>`;
     if (last && series.length > 1) etiq.push({ x: X(last.t) + 6, y: Y(last[se.col]) + 4, txt: se.corto });
   }
   etiq.sort((a, b) => a.y - b.y);
@@ -353,7 +434,7 @@ function grafico(cont, c) {
     series.forEach((se, i) => { const ci = el.querySelector('.c' + i);
       if (f[se.col] == null) ci.setAttribute('visibility', 'hidden');
       else { ci.setAttribute('cx', X(f.t)); ci.setAttribute('cy', Y(f[se.col])); ci.setAttribute('visibility', 'visible'); } });
-    tip.innerHTML = `<b>${f.fecha.slice(11, 16)}</b><br>` + series.map(se =>
+    tip.innerHTML = `<b>${f.etiqueta || f.fecha.slice(11, 16)}</b><br>` + series.map(se =>
       `<i class="sw" style="background:${se.color}"></i> ${se.nombre}: <b>${f[se.col] == null ? '<span style="color:var(--bad)">sin dato</span>' : fmt(f[se.col], c.dec) + ' ' + c.unidad}</b>`).join('<br>');
     tip.style.display = 'block';
     tip.style.left = Math.max(0, Math.min(X(f.t) / k + 12, r.width - tip.offsetWidth - 4)) + 'px'; tip.style.top = '6px';
@@ -366,17 +447,64 @@ function grafico(cont, c) {
 }
 function niceStep(x) { const p = Math.pow(10, Math.floor(Math.log10(x))), n = x / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p; }
 
+function rendimiento() {
+  const r1 = resumenRend('1'), r6 = resumenRend('6');
+  const T = [
+    ['Rendimiento arreglo 1', fmt(r1.eta, 1), '%', 'var(--s1)'],
+    ['Rendimiento arreglo 6', fmt(r6.eta, 1), '%', 'var(--s6)'],
+    ['E DC medida / teórica 1', `${fmt(r1.E / 1000, 2)} / ${fmt(r1.Et / 1000, 2)}`, 'kWh', 'var(--s1)'],
+    ['E DC medida / teórica 6', `${fmt(r6.E / 1000, 2)} / ${fmt(r6.Et / 1000, 2)}`, 'kWh', 'var(--s6)'],
+    ['PR arreglo 1', fmt(r1.PR, 1), '%', 'var(--s1)'],
+    ['PR arreglo 6', fmt(r6.PR, 1), '%', 'var(--s6)'],
+    ['Eficiencia conversión 1', fmt(r1.etaS, 2), '%', 'var(--s1)'],
+    ['Eficiencia conversión 6', fmt(r6.etaS, 2), '%', 'var(--s6)'],
+  ];
+  $('tiles-rend').innerHTML = T.map(([k, v, u, c]) =>
+    `<div class="tile"><div class="k">${c ? `<i class="sw" style="background:${c}"></i>` : ''}${k}</div><div class="v">${v}<span class="u">${u}</span></div></div>`).join('');
+  const cPT = { titulo: 'Potencia medida y teórica', unidad: 'W', dec: 0, series: [
+    { col: 'Pdc1_W', nombre: 'Medida arreglo 1', corto: '1', color: 'var(--s1)' },
+    { col: 'Pteo1_W', nombre: 'Teórica arreglo 1', corto: '1t', color: 'var(--s1)', dash: true },
+    { col: 'Pdc6_W', nombre: 'Medida arreglo 6', corto: '6', color: 'var(--s6)' },
+    { col: 'Pteo6_W', nombre: 'Teórica arreglo 6', corto: '6t', color: 'var(--s6)', dash: true }] };
+  $('ley-pt').innerHTML = cPT.series.map(s => `<span><i class="sw" style="background:${s.color};${s.dash ? 'opacity:.45' : ''}"></i>${s.nombre}</span>`).join('');
+  grafico('g-pt', cPT, FILAS);
+  const filasEta = SLOTS.filter(s => s.ok1 || s.ok6).map(s => {
+    const t = new Date(FILAS[0].t); t.setHours(Math.floor(s.key / 4), s.key % 4 * 15 + 7, 30, 0);
+    return { t, fecha: FILAS[0].fecha.slice(0, 11) + s.hora, etiqueta: `${s.hora} – ${hhmm(new Date(+t + 7.5 * 60000))}`, eta1: s.eta1, eta6: s.eta6 };
+  });
+  const cEta = { titulo: 'Rendimiento', unidad: '%', dec: 1, libre: true, ref: 100, puntos: true, series: [
+    { col: 'eta1', nombre: 'Arreglo 1', corto: '1', color: 'var(--s1)' },
+    { col: 'eta6', nombre: 'Arreglo 6', corto: '6', color: 'var(--s6)' }] };
+  $('ley-eta').innerHTML = cEta.series.map(s => `<span><i class="sw" style="background:${s.color}"></i>${s.nombre}</span>`).join('') + '<span>··· 100 % = igual al modelo</span>';
+  if (filasEta.length) grafico('g-eta', cEta, filasEta);
+  else $('g-eta').innerHTML = '<div class="vacio">Todavía no hay intervalos de 15 min válidos este día (G ≥ 200 W/m²)</div>';
+  $('t-rend').innerHTML = '<tr><th class="izq">Intervalo</th><th>G media</th><th>E medida 1</th><th>E teórica 1</th><th>η 1</th><th>E medida 6</th><th>E teórica 6</th><th>η 6</th></tr>' +
+    SLOTS.filter(s => (s.G1 ?? 0) > 0 || (s.G6 ?? 0) > 0).slice().reverse().map(s => `<tr><td class="izq">${s.hora}</td><td>${fmt(s.G1 ?? s.G6)} W/m²</td>
+      <td>${fmt(s.E1)} Wh</td><td>${fmt(s.Et1)} Wh</td><td>${s.ok1 ? fmt(s.eta1, 1) + ' %' : '<span style="color:var(--text-muted)">—</span>'}</td>
+      <td>${fmt(s.E6)} Wh</td><td>${fmt(s.Et6)} Wh</td><td>${s.ok6 ? fmt(s.eta6, 1) + ' %' : '<span style="color:var(--text-muted)">—</span>'}</td></tr>`).join('');
+  const est = ['1', '6'].filter(k => FILAS.some(f => f['TcEst' + k]));
+  const anos = ((FILAS.length ? FILAS[0].t : new Date()) - INSTALACION) / (365.25 * 864e5);
+  $('modelo').innerHTML = `
+    <b>Potencia teórica:</b> P<sub>teo</sub> = N · P<sub>STC</sub> · (G / 1000) · [1 + γ (T<sub>c</sub> − 25)] · f<sub>env</sub> · f<sub>sis</sub><br>
+    <b>Rendimiento experimental:</b> η = E<sub>medida</sub> / E<sub>teórica</sub>, por intervalos de 15 min (E = ∫ P dt).
+    PR = E / (N·P<sub>STC</sub>·H/1000) (IEC 61724-1). Eficiencia de conversión = E / (H · A).<br>
+    <b>Arreglo 1:</b> ${ARREGLO['1'].panel}, N = 10, γ = −0.41 %/°C, η<sub>STC</sub> = 15.6 %, NOCT = 45 °C, f<sub>env</sub> = ${fmt(fEnv(FILAS[0]?.t ?? new Date(), ARREGLO['1']), 3)}<br>
+    <b>Arreglo 6:</b> ${ARREGLO['6'].panel}, N = 10, γ = −0.41 %/°C, η<sub>STC</sub> = 17.11 %, NOCT = 43 °C, f<sub>env</sub> = ${fmt(fEnv(FILAS[0]?.t ?? new Date(), ARREGLO['6']), 3)}<br>
+    f<sub>env</sub>: garantía lineal del fabricante, ${fmt(anos, 1)} años desde la instalación (2018-01-01). f<sub>sis</sub> = ${fmt(F_SIS, 3)} (desajuste 2 %, cableado DC 2 %, conectores 0.5 %, placa 1 %; PVWatts).<br>
+    T<sub>c</sub>: DS18B20 bajo cada arreglo${est.length ? `; donde no hay lectura se estima con T<sub>c</sub> = T<sub>amb</sub> + (NOCT − 20)·G/800 (arreglo ${est.join(' y ')})` : ''}.`;
+}
+
 function perdidos() {
   const esp = minutosEsperados();
   $('esperadas').textContent = FILAS.length
     ? `De ${hhmm(FILAS[0].t)} a ${hhmm(FILAS[FILAS.length - 1].t)}: ${esp} lecturas esperadas (1 por minuto), ${FILAS.length} filas recibidas`
     : 'Sin lecturas';
   $('t-comp').innerHTML = '<tr><th>Componente</th><th>Min. válidos</th><th>Min. con NaN</th><th>Min. sin fila</th><th>% completo</th><th></th></tr>' +
-    COLS.map(s => { const q = completitud(s.col);
+    COLS.filter(s => FILAS.length && s.col in FILAS[0]).map(s => { const q = completitud(s.col);
       return `<tr><td><span style="display:inline-flex;gap:6px;align-items:center"><i class="sw" style="background:${s.color}"></i>${s.nombre}</span></td>
         <td>${q.ok}</td><td>${q.nan}</td><td>${q.faltan}</td><td style="color:${colorPct(q.pct)};font-weight:600">${fmt(q.pct, 1)} %</td>
         <td><div class="barra-pct"><i style="width:${q.pct}%;background:${colorPct(q.pct)}"></i></div></td></tr>`; }).join('');
-  const filas = COLS.flatMap(s => huecos([s.col]).map(g => ({ ...g, s })));
+  const filas = COLS.filter(s => FILAS.length && s.col in FILAS[0]).flatMap(s => huecos([s.col]).map(g => ({ ...g, s })));
   filas.sort((a, b) => b.a - a.a);
   $('t-huecos').innerHTML = filas.length
     ? '<tr><th>Componente</th><th class="izq">Desde</th><th class="izq">Hasta</th><th>Duración</th></tr>' +
@@ -387,9 +515,10 @@ function perdidos() {
 
 function tablaTodo() {
   $('n-filas').textContent = `${FILAS.length} filas`;
-  $('t-todo').innerHTML = '<tr><th>Hora</th>' + COLS.map(s => `<th>${s.nombre}</th>`).join('') + '</tr>' +
+  const CP = COLS.filter(s => FILAS.length && s.col in FILAS[0]);
+  $('t-todo').innerHTML = '<tr><th>Hora</th>' + CP.map(s => `<th>${s.nombre}</th>`).join('') + '</tr>' +
     FILAS.slice().reverse().map(f => `<tr><td>${f.fecha.slice(11)}</td>` +
-      COLS.map(s => f[s.col] == null ? '<td class="nan">NaN</td>' : `<td>${fmt(f[s.col], s.col.endsWith('_C') ? 1 : 0)}</td>`).join('') + '</tr>').join('');
+      CP.map(s => f[s.col] == null ? '<td class="nan">NaN</td>' : `<td>${fmt(f[s.col], s.col.endsWith('_C') ? 1 : 0)}</td>`).join('') + '</tr>').join('');
 }
 
 // ---------- descargas ----------
@@ -411,7 +540,8 @@ $('b-rango').onclick = async () => {
 };
 
 function dibujar() {
-  estado(); tiles(); cards(); perdidos(); tablaTodo();
+  window.FILAS_ACT = FILAS; calcularModelo();
+  estado(); tiles(); cards(); rendimiento(); perdidos(); tablaTodo();
 }
 
 async function cargarDia(d) {
@@ -438,7 +568,7 @@ async function iniciar() {
 $('dia').onchange = e => cargarDia(e.target.value);
 $('ant').onclick = () => { const i = DIAS.indexOf(DIA); if (i > 0) cargarDia(DIAS[i - 1]); };
 $('sig').onclick = () => { const i = DIAS.indexOf(DIA); if (i < DIAS.length - 1) cargarDia(DIAS[i + 1]); };
-let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => FILAS.length && cards(), 150); });
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => FILAS.length && dibujar(), 150); });
 iniciar();
 setInterval(iniciar, 60 * 1000);
 </script>
